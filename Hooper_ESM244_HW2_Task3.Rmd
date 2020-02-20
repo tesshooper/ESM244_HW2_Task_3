@@ -1,0 +1,145 @@
+---
+title: "Hooper_ESM244_HW2_Task3"
+author: "Tess Hooper"
+date: "2/20/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+
+## Load packages
+
+library(tidyverse)
+library(sf)
+library(tmap)
+library(ggspatial)
+library(janitor)
+library(here)
+
+
+## Read in data 
+
+lu_lc <- read_sf(dsn = here("Land_Use_Land_Cover_LULC"), layer = "Land_Use_Land_Cover_LULC") %>% 
+  select(landcover, st_areasha, perimeter) %>% # Sticky geometry so don't need to select that
+  st_transform(crs = 4326) # Ensure in right CRS
+
+watersheds <- read_sf(dsn = here("Watersheds"), layer = "Watersheds") %>% 
+  select(wuname, area_sqmi, hucarea, st_areasha, st_perimet) %>% # Sticky geometry so don't need to select that
+  st_transform(crs = 4326)
+
+```
+
+
+### **Land Use/Land Cover and Watersheds on the Big Island, Hawaii**
+
+
+**Citations:**  
+*Land use/land cover data:* http://geoportal.hawaii.gov/datasets/land-use-land-cover-lulc
+*Watershed data:* http://geoportal.hawaii.gov/datasets/watersheds
+
+#### 1. Land Use/Land Cover 
+```{r}
+
+### Wrangling and Exploration:
+
+# Look at LULC: 
+plot(lu_lc)
+
+
+#unique(lu_lc$landcover) 
+# 28 different land use types. One of them is just "0" -- does that mean no data available? 
+# Could group land use types into categories: Agriculture, Residential, Urban, Aquatic?
+
+#### TYPES ####
+#[1] "Cropland and Pasture"                                                     
+#[2] "Commercial and Services"                                                  
+#[3] "Residential"                                                              
+#[4] "Evergreen Forest Land"                                                    
+#[5] "Other Urban or Built-up Land"                                             
+#[6] "Mixed Rangeland"                                                          
+#[7] "Industrial"                                                               
+#[8] "Streams and Canals"                                                       
+#[9] "Orchards, Groves, Vineyards, Nurseries and Ornamental Horticultural Areas"
+#[10] "Shrub and Brush Rangeland"                                                
+#[11] "Forested Wetland"                                                         
+#[12] "Reservoirs"                                                               
+#[13] "Nonforested Wetland"                                                      
+#[14] "Bare Exposed Rock"                                                        
+#[15] "Sandy Areas Other than Beaches"                                           
+#[16] "Transportation, Communications and Utilities"                             
+#[17] "Herbaceous Rangeland"                                                     
+#[18] "Beaches"                                                                  
+#[19] "Other Agricultural Land"                                                  
+#[20] "Lakes"                                                                    
+#[21] "Strip Mines, Quarries, and Gravel Pits"                                   
+#[22] "Mixed Barren Land"                                                        
+#[23] "Bays and Estuaries"                                                       
+#[24] "Mixed Urban or Built-up Land"                                             
+#[25] "Transitional Areas"                                                       
+#[26] "0"                                                                        
+#[27] "Industrial and Commercial Complexes"                                      
+#[28] "Confined Feeding Operations"  
+
+lu_lc_categories <- lu_lc %>% 
+  mutate(
+    landcover = case_when (
+      landcover %in% c("Industrial and Commercial Complexes",
+                        "Mixed Urban or Built-up Land",
+                        "Transportation, Communications and Utilities",
+                        "Industrial",
+                        "Commercial and Services",
+                        "Other Urban or Built-up Land" ) ~ "Urban", #Group this into a broader "Urban" category 
+      landcover %in% c("Confined Feeding Operations",
+                        "Other Agricultural Land",
+                        "Orchards, Groves, Vineyards, Nurseries and Ornamental Horticultural Areas",
+                        "Cropland and Pasture") ~ "Agricultural", # Group these into a broader "Agricultral" category
+      landcover %in% c("Bays and Estuaries",
+                        "Lakes",
+                        "Reservoirs",
+                        "Streams and Canals") ~ "Waterways", # Group these into a broader "Waterways" category
+      landcover %in% c("Nonforested Wetland",
+                       "Forested Wetland") ~ "Wetlands", # "Wetlands" category
+      landcover %in% c("Mixed Rangeland",
+                       "Shrub and Brush Rangeland",
+                       "Herbaceous Rangeland") ~ "Rangeland",
+      TRUE ~ landcover)) %>%  # Keep everything else as is 
+  filter(landcover != 0) # Filter out the "0" landcover (no data?)
+  
+unique(lu_lc_categories$landcover)
+# Now 13 categories, little bit better. Could group more if necessary? 
+
+plot(lu_lc_categories)
+# Still have area and perimeter. Not necessary but could be useful in visualizing the total area of each land use type. 
+
+### Maybe only visualize certain land uses??
+                        
+```
+
+```{r}
+
+### Visualize Land Use / Land Cover 
+
+lulc_plot <- ggplot(data = lu_lc_categories) +
+  geom_sf(data = lu_lc_categories, 
+          color = NA, # Gets rid of gray coloring borders which made categories difficult to see 
+          aes(fill = landcover)) +
+  scale_fill_paletteer_d()
+  
+  
+lulc_plot
+
+
+
+
+
+
+
+
+```
+
+
+#### 2. Watersheds
+
+
+
