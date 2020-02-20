@@ -16,6 +16,13 @@ library(tmap)
 library(ggspatial)
 library(janitor)
 library(here)
+library(nationalparkcolors)
+library(paletteer)
+library(palettetown)
+library(ggsci)
+library(leaflet)
+library(shinyjs)
+library(gameofthrones)
 
 
 ## Read in data 
@@ -116,30 +123,116 @@ plot(lu_lc_categories)
                         
 ```
 
+<br>
+
 ```{r}
 
-### Visualize Land Use / Land Cover 
+### Visualize Land Use / Land Cover for just Big Island
 
 lulc_plot <- ggplot(data = lu_lc_categories) +
   geom_sf(data = lu_lc_categories, 
           color = NA, # Gets rid of gray coloring borders which made categories difficult to see 
           aes(fill = landcover)) +
-  scale_fill_paletteer_d()
+  scale_fill_paletteer_d("ggsci::springfield_simpsons") +
+  xlab("Longitude") +
+  ylab("Latitude") +
+  ggtitle("Land Use and Land Cover on Big Island, Hawaii") +
+  labs(fill = "Landcover") +
+  theme_minimal() +
+  coord_sf(xlim = c(-156.5, -154.5), ylim = c(18.5, 20.5), expand = FALSE) + # Clip to just Big Island
+  theme(panel.background = element_rect(fill = "paleturquoise")) # Add background light blue color to make it look like ocean. Is it too bright? Need another color maybe. 
   
+
+## Could add more details in this plot? Maybe add ocean color background. Could also zoom in to one island? Is it too difficult to see individual land uses? Or maybe need to decrease categories. 
   
+
 lulc_plot
 
 
+```
+  
+**Figure 1. Land Use and Land Cover on Big Island, Hawaii**. Land use and land cover for thirteen different categories. 
+<br>
+
+Make it interactive!
+```{r}
+
+## Make an interactive map using Tmap
 
 
+tmap_mode("view") # Tmap set to interactive viewing
 
+lulc_tmap <- tm_basemap("Esri.WorldImagery") + # Add general basemap
+  tm_shape(lu_lc_categories) +
+  tm_fill(col = "landcover", palette = "Set1") + # Fill by landuse 
+  tm_legend(legend.position = c("right", "bottom")) +
+  tm_layout(title = "Land Use and Land Cover in Hawaii")
+
+#leaflet::providers$Stamen.Watercolor
+
+lulc_tmap
+
+# World Imagery might not be the best basemap to use. It's a little dark? 
 
 
 
 ```
+  
+**Figure 2. Interactive Map for Land Use and Land Cover on Hawaii.**
+
+<br>
 
 
-#### 2. Watersheds
+#### 2. Watersheds in Hawaii
+```{r}
+
+## Plot watersheds
+
+# plot(watersheds)
+
+### Visualize watersheds by area
+
+watersheds_plot <- ggplot(data = watersheds) +
+  geom_sf(data = watersheds, 
+          color = NA, # Gets rid of gray coloring borders which made categories difficult to see 
+          aes(fill = area_sqmi)) +
+  scale_fill_paletteer_c("gameofthrones::daenerys") +
+  xlab("Longitude") +
+  ylab("Latitude") +
+  ggtitle("Watersheds on Hawaii") +
+  labs(fill = "Area (Sq Mi)") +
+  theme(panel.grid.major = element_line(color = gray(.1), 
+                                        linetype = "dashed", size = 0.1), 
+        panel.background = element_rect(fill = "aliceblue"))
+
+watersheds_plot
+
+```
+  
+**Figure 3. Watersheds in Hawaii by Area.** Watersheds on Hawaii delineated by area. 
+
+Crop to just Big Island, Hawaii
+```{r}
+
+
+ws_bigisland_plot <- ggplot(data = watersheds) +
+  geom_sf(data = watersheds, 
+          color = NA, # Gets rid of gray coloring borders which made categories difficult to see 
+          aes(fill = area_sqmi)) +
+  scale_fill_paletteer_c("gameofthrones::daenerys") +
+  xlab("Longitude") +
+  ylab("Latitude") +
+  ggtitle("Watersheds on Hawaii") +
+  labs(fill = "Area (Sq Mi)") +
+  theme(panel.grid.major = element_line(color = gray(.1), 
+                                        linetype = "dashed", size = 0.1), 
+        panel.background = element_rect(fill = "aliceblue")) +
+  coord_sf(xlim = c(-156.5, -154.5), ylim = c(18.5, 20.5), expand = FALSE)
+
+ws_bigisland_plot
 
 
 
+```
+  
+**Figure 4. Watersheds on Big Island, Hawaii.** Watersheds on Big Island, Hawaii delineated by area. 
